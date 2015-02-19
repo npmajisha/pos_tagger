@@ -166,11 +166,6 @@ class perceptron_train:
             
             #check against the dev set
             if (devfile):
-                for label in self.labels:    
-                    c_weight_vector = feature_vector[label]
-                    c_avg_weight_vector = avg_feature_vector[label]                               
-                    
-                    update_avg_weights(lambda x : x * (c - change_counter[label]),c_weight_vector, c_avg_weight_vector)
                 print(str(classifier.check_dev_error(devfile, c_avg_weight_vector)))
                 
         
