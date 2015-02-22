@@ -7,27 +7,30 @@ import pickle
 class perceptron_classify:
     
     def check_dev_error(self, dev_file , weight_vector):
-        dev_text = open(dev_file, 'rb')
-        count = 0
-        total = 0
-        
+        dev_text = open(dev_file, 'r+')
+        total = 0.0
+        count = 0.0
+        error = 0.0
         for line in dev_text:
             total += 1
-            words = re.split(r'\s+', str(line.rstrip()))
+            words = re.split(r'\s+', line.rstrip())
             actual_label = words[0]
-            classified_label = self.classify(line, weight_vector)
+            w_line = ' '.join(words[1:])
             
+            classified_label = self.classify(w_line, weight_vector)
             if classified_label != actual_label:
                 count += 1
                 
+        
         dev_text.close()
         if total!=0:
-            return float(count/total)
+            error = count/total
+            return error
     
     def classify(self , line , weight_vector):
      
         words = []
-        words = re.split(r'\s+', str(line.rstrip()))
+        words = re.split(r'\s+', line.rstrip())
         calculated_weights = {}
         for label in weight_vector:
             weights = weight_vector[label]
@@ -57,8 +60,9 @@ def main():
     
      
     for line in sys.stdin:
-        classified_label = perceptron.classify(str(line) , feature_weights)
-        print(classified_label)
+        classified_label = perceptron.classify(line , feature_weights)
+        sys.stdout.write(classified_label + "\n")
+        sys.stdout.flush
         
 
 if __name__ == '__main__':
