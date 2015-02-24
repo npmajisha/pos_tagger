@@ -1,7 +1,7 @@
 # Averaged Perceptron
 #input the training file and output is model file
 #optional devfile
-#todo -- split training file in case devfile is not provided
+#split training file in case devfile is not provided
 import sys
 import re
 import argparse
@@ -9,6 +9,7 @@ import pickle
 import percepclassify
 from collections import defaultdict
 import time
+import codecs
 
 
 #perceptron training class
@@ -69,7 +70,7 @@ class perceptron_train:
     #Writes the learnt model - the average weight vector for the features to the modelfile
     def write_weights_file(self, feature_weight_vector, modelfile):
 
-        output = open(modelfile, "wb")
+        output = open(modelfile,"wb")
 
         pickle.dump(feature_weight_vector, output)
 
@@ -91,7 +92,7 @@ class perceptron_train:
         #and initialize the feature_vectors and avg_feature_vectors
 
         #open the training file
-        training_file = open(trainingfile, "r+")
+        training_file = codecs.open(trainingfile, "r+",encoding='latin-1',errors = 'ignore')
 
         #counter i -to keep track of the lines in the text
         i = 0
@@ -129,7 +130,7 @@ class perceptron_train:
             train_lines = int(i * .8)
             #create temporary dev_file
             devfile = "_temp_dev"
-            dev_file = open(devfile, "w+")
+            dev_file = codecs.open(devfile, "w+",encoding='latin-1',errors = 'ignore')
             for line in lines[train_lines:]:
                 dev_file.write(" ".join(line) + "\n")
 
@@ -179,7 +180,7 @@ class perceptron_train:
 
                 #self.print_feature_weights(1)
                 c += 1
-            iter_end = time.time()
+
             #print("Iteration time: ",iter_end-iter_start)
 
             #Test the performance of the average weight vector using the classifier
@@ -204,7 +205,8 @@ class perceptron_train:
                     best_avg_vector = dict(self.avg_feature_vector)
 
         #Iteration ends here
-
+            iter_end = time.time()
+            print("Time:",iter_end-iter_start)
         if (devfile):
             self.write_weights_file(best_avg_vector, modelfile)
             return

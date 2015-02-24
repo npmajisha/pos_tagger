@@ -3,11 +3,12 @@
 import sys
 import re
 import pickle
+import codecs
 
 class perceptron_classify:
     
     def check_dev_error(self, dev_file , weight_vector):
-        dev_text = open(dev_file, 'r+')
+        dev_text = codecs.open(dev_file, 'r+',encoding='latin-1',errors = 'ignore')
         total = 0.0
         count = 0.0
         error = 0.0
@@ -57,7 +58,8 @@ def main():
     weights_file.close()
     
     perceptron = perceptron_classify()
-    
+    sys.stdin = codecs.getreader('latin-1')(sys.stdin)
+    sys.stdout = codecs.getwriter('latin-1')(sys.stdout)
      
     for line in sys.stdin:
         classified_label = perceptron.classify(line , feature_weights)
