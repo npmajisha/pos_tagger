@@ -49,7 +49,7 @@ def main():
 
                 classified_label = perceptron.classify(features, feature_weights)
                 tagged_tokens.append(str(token + "/" + classified_label))
-        tagged_sequence = " ".join(tagged_tokens)
+        tagged_sequence = " ".join(tagged_tokens) + "\n"
         sys.stdout.write(tagged_sequence)
         sys.stdout.flush
 
