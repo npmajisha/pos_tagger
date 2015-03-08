@@ -197,7 +197,7 @@ class perceptron_train:
                         self.update_feature_weights(c, label, feature, 0)
 
                 #Call the Perceptron classifier to check for the error rate on dev set
-                dev_error = classifier.check_dev_error(devfile, self.avg_feature_vector)
+                dev_error = classifier.check_dev_error(devfile, self.feature_vector)
                 print("Error:", dev_error)
                 #if current error is less than the previous error we set this as the best average vector
                 if prev_error > dev_error:
