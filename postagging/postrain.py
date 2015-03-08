@@ -5,6 +5,34 @@ import perceplearn
 import sys
 import re
 import codecs
+import string
+
+def wordshape(word):
+    shape = ""
+
+    if word.isalpha():
+
+        if word.isupper():
+            shape = "AA"
+
+        if word[0].isupper():
+            shape = "Aa"
+
+        if word.islower():
+            shape = "aa"
+
+    elif word.isalnum():
+        if word[0].isupper():
+            shape = "A0"
+        else:
+            shape = "a0"
+
+    elif word.isdigit():
+        shape = "D0"
+    elif len(word)==1 and word in string.punctuation:
+        shape = "PUNC"
+
+    return shape
 
 def pos_tag_formatter(input_filename,output_filename, dev_start):
 
@@ -12,59 +40,60 @@ def pos_tag_formatter(input_filename,output_filename, dev_start):
     pos_feature = codecs.open(output_filename, "w+",'latin-1',errors='ignore')
 
     line_number = 0
-    feature = ""
+    features = ""
     for line in pos_train:
         line_number += 1
 
         if dev_start!=0 and line_number>= dev_start:
 
-            pos_feature.write(feature)
+            pos_feature.write(features)
             pos_feature.close()
             pos_feature = codecs.open("pos.dev.tmp","w+",'latin-1',errors = 'ignore')
-            feature = ""
+            features = ""
             dev_start = 0
 
-        #line is of the form word/tag
-        comb_word_tag = re.split(r'\s+',line.rstrip())
+        words = re.split(r'\s+',line)
+    #First two words are B_O_S, last one words are E_O_S
+
+        for i, comb_word in enumerate(words[2:-2]):
+            curr = i+2
+            word_tag = comb_word.rpartition('/')
+            word = word_tag[0]
+            tag = word_tag[2]
+
+            if words[curr-2] == "B_O_S":
+                prev2_word =  words[curr-2]
+                prev2_tag = ""
+            else:
+                prev_word_tag = words[curr-2].rpartition('/')
+                prev2_word = prev_word_tag[0].lower()
+                prev2_tag =  prev_word_tag[2]
+
+            if words[curr-1] == "B_O_S":
+                prev1_word = words[curr-1]
+                prev1_tag = ""
+            else:
+                prev_word_tag = words[curr-1].rpartition('/')
+                prev1_word = prev_word_tag[0].lower()
+                prev1_tag =  prev_word_tag[2]
+
+            if words[curr+1] == "E_O_S":
+                next1_word = words[curr+1]
+            else:
+                next_word_tag = words[curr+1].rpartition('/')
+                next1_word = next_word_tag[0].lower()
+
+            if words[curr+2] == "E_O_S":
+                next2_word = words[curr+2]
+            else:
+                next_word_tag = words[curr+2].rpartition('/')
+                next2_word = next_word_tag[0].lower()
 
 
-        i=0
-        #first token processing
-        word_tag = re.split(r'/',comb_word_tag[0])
-        #word_tag = comb_word_tag[0].rpartition('/')
 
-        if len(comb_word_tag) > 1:
-            next_word = "/".join(re.split(r'/',comb_word_tag[1])[:-1])
-            #next_word = comb_word_tag[1].rpartition('/')[0]
-        else:
-            next_word = "E_O_S"
-        #feature label current_word w_prev:prev_word w_next:next_word
-        #rpartition returns 3 tuples : word_tag[-1]
-        feature += word_tag[-1]+" "+"/".join(word_tag[:-1])+ " w_prev:B_O_S"+" w_next:"+next_word +"\n"
+            features += " ".join([tag , word.lower(),"w1_prev:"+prev1_word,"w1_tag:"+prev1_tag,"w2_prev:"+prev2_word, "w2_tag:"+prev2_tag, "w1_next:"+next1_word,"w2_next:"+next2_word,"w_shape:"+wordshape(word),"\n"])
 
-
-        #pos_feature.write(feature+"\n")
-
-        for token in comb_word_tag[1:-1]:
-            i += 1
-            #word_tag = token.rpartition('/')
-            word_tag = re.split(r'/',token)
-            #prev_tag = comb_word_tag[i-1].rpartition('/')
-            prev_tag = re.split(r'/',comb_word_tag[i-1])
-
-            next_tag = re.split(r'/',comb_word_tag[i+1])
-
-            feature += word_tag[-1]+" "+ "/".join(word_tag[:-1])+ " w_prev:"+ "/".join(prev_tag[:-1])+" w_next:"+"/".join(next_tag[:-1])+"\n"
-
-            #pos_feature.write(feature+"\n")
-
-        #last token processing
-        if len(comb_word_tag) > 1:
-            prev_tag = re.split(r'/',comb_word_tag[-2])
-            word_tag = re.split(r'/',comb_word_tag[-1])
-            feature += word_tag[-1]+" "+"/".join(word_tag[:-1])+" w_prev:"+"/".join(prev_tag[:-1])+" w_next:E_O_S"+"\n"
-
-    pos_feature.write(feature)
+    pos_feature.write(features)
     pos_feature.close()
 
     return

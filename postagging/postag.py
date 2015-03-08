@@ -5,6 +5,33 @@ import re
 import percepclassify
 import codecs
 
+def wordshape(word):
+    shape = ""
+
+    if word.isalpha():
+
+        if word.isupper():
+            shape = "AA"
+
+        if word[0].isupper():
+            shape = "Aa"
+
+        if word.islower():
+            shape = "aa"
+
+    elif word.isalnum():
+        if word[0].isupper():
+            shape = "A0"
+        else:
+            shape = "a0"
+
+    elif word.isdigit():
+        shape = "D0"
+    elif len(word)==1 and word in string.punctuation:
+        shape = "PUNC"
+
+    return shape
+
 def main():
 
     weights_file = open(sys.argv[1] ,'rb')
@@ -18,26 +45,29 @@ def main():
 
     for line in sys.stdin:
         tagged_tokens = []
+        tags = []
+        tags.append("")
+        tags.append("")
+
         #line is tokens separated by space
-        line_tokens = re.split(r'\s+',line.rstrip())
 
-        i=0
-        no_of_tokens = len(line_tokens)
-        if no_of_tokens == 1:
-            features = line_tokens[0] + " w_prev:B_O_S" + " w_next:E_O_S"
-            classified_label = perceptron.classify(features, feature_weights)
-            tagged_tokens.append(str(line_tokens[0] + "/" + classified_label))
-        else:
-            for token in line_tokens:
-                if i==0:
-                    features = token + " w_prev:B_O_S" + " w_next:" + line_tokens[i+1]
-                elif i == no_of_tokens-1:
-                    features = token + " w_prev:" + line_tokens[i-1] + " w_next:E_O_S"
-                else:
-                    features = token + "w_prev:" + line_tokens[i-1] + " w_next:" + line_tokens[i+1]
+        new_line = " ".join(["B_O_S","B_O_S",line.rstrip(),"E_O_S","E_O_S"])
 
-                classified_label = perceptron.classify(features, feature_weights)
-                tagged_tokens.append(str(token + "/" + classified_label))
+        tokens = re.split(r'\s+',new_line)
+
+        for i, token in enumerate(tokens[2:-2]):
+            curr = i+2
+            prev2_word = tokens[curr-2].lower()
+            prev2_tag = tags[curr-2]
+            prev1_word = tokens[curr-1].lower()
+            prev1_tag = tags[curr-1]
+            next1_word = tokens[curr+1].lower()
+            next2_word = tokens[curr+2].lower()
+
+            features = " ".join([token.lower(),"w1_prev:"+prev1_word,"w1_tag:"+prev1_tag,"w2_prev:"+prev2_word, "w2_tag:"+prev2_tag, "w1_next:"+next1_word,"w2_next:"+next2_word,"w_shape:"+wordshape(token)])
+            tags.append(perceptron.classify(features, feature_weights))
+            tagged_tokens.append(str(token + "/" + tags[curr]))
+
         tagged_sequence = " ".join(tagged_tokens)
         sys.stdout.write(tagged_sequence + "\n")
         sys.stdout.flush
