@@ -7,70 +7,82 @@ import perceplearn
 import sys
 import re
 import codecs
+import string
+
+
+def wordshape(word):
+    shape = ""
+
+    if word.isalpha():
+
+        if word.isupper():
+            shape = "AA"
+
+        if word[0].isupper():
+            shape = "Aa"
+
+        if word.islower():
+            shape = "aa"
+
+    elif word.isdigit():
+        shape = "D0"
+    elif len(word)==1 and word in string.punctuation:
+        shape = "PUNC"
+
+    return shape
 
 def ner_tag_formatter(input_filename,output_filename, dev_start):
 
     ner_train = codecs.open(input_filename, 'r+',encoding='latin-1',errors='ignore')
     ner_feature = codecs.open(output_filename, "w+", encoding='latin-1',errors ='ignore')
     line_number = 0
-    feature = ""
+    features = ""
     for line in ner_train:
         line_number += 1
 
         if dev_start!=0 and line_number>= dev_start:
-            ner_feature.write(feature)
+            ner_feature.write(features)
             ner_feature.close()
             ner_feature =  codecs.open("ner.dev.tmp","w+",encoding='latin-1'
                                                                    '',errors='ignore')
-            feature = ""
+            features = ""
             dev_start = 0
 
-        #line is of the form word/postag/nertag
-        comb_word_tag = re.split(r'\s+',line.rstrip())
+        words = re.split(r'\s+'," ".join(["B_O_S","B_O_S",line.rstrip(),"E_O_S","E_O_S"]))
+        #First two words are B_O_S, last one words are E_O_S
 
+        for i, comb_word in enumerate(words[2:-2]):
+            curr = i+2
+            word_pos_tag = comb_word.rpartition('/')
+            tag = word_pos_tag[2]
+            word_pos = word_pos_tag[0].rpartition('/')
+            word = word_pos[0]
+            pos = word_pos[2]
 
-        i=0
-        #first token processing
-        word_tag = re.split(r'/',comb_word_tag[0])
-        prev_pos = ""
-        #word_tag = comb_word_tag[0].rpartition('/')
+            if words[curr-2] == "B_O_S":
+                prev2_word = "B_O_S"
+                prev2_tag = ""
+                prev2_pos = ""
+            else:
+                prev2_word_pos_tag = words[curr-2].rpartition('/')
+                prev2_tag =  prev2_word_pos_tag[2]
+                prev2_word_pos = prev2_word_pos_tag[0].rpartition('/')
+                prev2_word = prev2_word_pos[0].lower()
+                prev2_pos = prev2_word_pos[2]
 
-        if len(comb_word_tag) > 1:
-            next_tag = re.split(r'/',comb_word_tag[1])
-            next_word = "/".join(next_tag[:-2])
-            next_pos = next_tag[-2]
-            #next_word = comb_word_tag[1].rpartition('/')[0]
-        else:
-            next_word = "E_O_S"
-            next_pos = ""
-        #feature label current_word w_prev:prev_word w_next:next_word
-        #rpartition returns 3 tuples : word_tag[-1]
-        feature += word_tag[-1]+" "+"/".join(word_tag[:-2])+ " c_pos:"+ word_tag[-2]+" prev_ner:"+ " w_prev:B_O_S"+ " prv_pos:"+prev_pos+ " w_next:"+next_word + " nxt_pos:"+ next_pos + "\n"
+            if words[curr-1] == "B_O_S":
+                prev1_word = "B_O_S"
+                prev1_tag = ""
+                prev1_pos = ""
+            else:
+                prev1_word_pos_tag = words[curr-1].rpartition('/')
+                prev1_tag =  prev1_word_pos_tag[2]
+                prev1_word_pos = prev1_word_pos_tag[0].rpartition('/')
+                prev1_word = prev1_word_pos[0].lower()
+                prev1_pos = prev1_word_pos[2]
 
-
-        for token in comb_word_tag[1:-1]:
-
-            i += 1
-            #word_tag = token.rpartition('/')
-            word_tag = re.split(r'/',token)
-            #prev_tag = comb_word_tag[i-1].rpartition('/')
-            prev_tag = re.split(r'/',comb_word_tag[i-1])
-            prev_pos = prev_tag[-2]
-            next_tag = re.split(r'/',comb_word_tag[i+1])
-            next_pos = next_tag[-2]
-
-            feature += word_tag[-1]+" "+ "/".join(word_tag[:-2])+ " c_pos:"+ word_tag[-2]+" prev_ner:"+ prev_tag[-1]+" w_prev:"+"/".join(prev_tag[:-2])+ " prv_pos:"+prev_pos+" w_next:"+"/".join(next_tag[:-2]) + " nxt_pos:"+ next_pos + "\n"
-
-            #pos_feature.write(feature+"\n")
-
-        #last token processing
-        if len(comb_word_tag) > 1:
-            prev_tag = re.split(r'/',comb_word_tag[-2])
-            prev_pos = prev_tag[-2]
-            word_tag = re.split(r'/',comb_word_tag[-1])
-            feature += word_tag[1]+" "+"/".join(word_tag[:-2])+" c_pos:"+ word_tag[-2]+" prev_ner:"+ prev_tag[-1]+" w_prev:"+"/".join(prev_tag[-2])+" prv_pos:" +prev_pos +" w_next:E_O_S"+ " nxt_pos:"+ "\n"
-
-    ner_feature.write(feature)
+            features += " ".join([tag , word.lower(),"w_pos:"+pos,"w1_tag:"+prev1_tag,"w1_pos:"+prev1_pos, "w2_tag:"+prev2_tag, "w2_pos:"+prev2_pos,"w_shape:"+wordshape(word),"\n"])
+    ner_feature.write(features)
     ner_feature.close()
 
     return
